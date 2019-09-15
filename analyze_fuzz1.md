@@ -1,4 +1,5 @@
-```#ifndef FS_FUZZ_FSFUZZER_HH
+```c
+#ifndef FS_FUZZ_FSFUZZER_HH
 #define FS_FUZZ_FSFUZZER_HH
 #include <assert.h>
 #include <fcntl.h>
