@@ -46,7 +46,7 @@ class fsfuzzer {
         block_count_ = image_size_ / block_size_;
         
         zero = malloc(block_size_);
-        memset(zero, 0, sizeof(zero));
+        vggmemset(zero, 0, sizeof(zero));
         
         int in_image_fd = open(in_path, O_RDONLY);
         if (in_image_fd < 0)
@@ -78,25 +78,31 @@ class fsfuzzer {
         
         print_metadata();
     }
+
+	/*함수명 : sync_to_file
+	  파라미터 : out_path 포인터
+	  설명 : 
+	
+	*/
     void sync_to_file(const char *out_path) {
       int fd = open(out_path, O_CREAT | O_RDWR | O_TRUNC, 0666);
       if (write(fd, image_buffer_, image_size_) != image_size_)
         FATAL("[-] image sync to file %s failed.", out_path);
       close(fd);
     }
+
+    
     bool release_metadata(std::set<uint64_t> &meta_blocks, int meta_image_fd, bool in_block) {
       std::set<uint64_t>::iterator it = meta_blocks.begin();
-      // for (auto no : meta_blocks)
-      //  std::cout << no << std::endl;
+
       do {
         extent_t extent;
         extent.first = in_block ? (*it) * block_size_ : (*it);
         extent.second = block_size_;
         uint64_t cur_offset = extent.first;
-        // std::cout << "visit " << *it << std::endl;
+
         for (it++; it != meta_blocks.end(); it++) {
-          // std::cout << "visit " << *it << std::endl;
-          // std::cout << cur_offset + block_size << std::endl;
+
           if (cur_offset + block_size_ == (in_block ? (*it) * block_size_ : (*it))) {
             extent.second += block_size_;
             cur_offset += block_size_;
@@ -105,8 +111,8 @@ class fsfuzzer {
           }
         }
         
-        metadata_.push_back(extent);
-        // std::cout << "offset: " << extent.first << "size: " << extent.second << std::endl;
+        metadata_.push_back(extent); 									// 벡터의 맨 뒤로 metaData를 집어 넣는다. 
+
         if (meta_image_fd > 0) {
           if (write(meta_image_fd, (char *)image_buffer_ + extent.first, extent.second) != extent.second)
             return false;
@@ -132,3 +138,5 @@ class fsfuzzer {
 };
 #endif
 ```
+
+
