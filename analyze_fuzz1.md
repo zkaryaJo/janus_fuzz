@@ -7,10 +7,12 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/uio.h>
+//파일 정보를 읽어오기 위해 하단의 3개 헤더 추가필요. stat
 #include <unistd.h>
 #include <sys/types.h>
-#include <sys/uio.h>
 #include <sys/stat.h>
+
 #include <sys/sendfile.h>
 #include <set>
 #include <vector>
@@ -50,37 +52,37 @@ class fsfuzzer {
         void *zero;
         struct stat st;
         bool generate_meta_image = meta_path != NULL;
-        stat(in_path, &st);
-        image_size_ = st.st_size;
+        stat(in_path, &st);				//파일의 정보를 읽어오는 함수로, st라는 구조체에 파일의 상태가 저장된다. 파일의 link, uid, gid size 등을 알 수 있다.
+        image_size_ = st.st_size;			//이미지 사이즈
         block_size_ = 64;
-        block_count_ = image_size_ / block_size_;
+        block_count_ = image_size_ / block_size_;	//블럭의 갯수 : 이미지크기/64
         
-        zero = malloc(block_size_);		//블록 사이즈 만큼 메모리 할당( malloc(64) )
-        vggmemset(zero, 0, sizeof(zero));	//
+        zero = malloc(block_size_);				//블록 사이즈 만큼 메모리 할당( malloc(64) )
+        memset(zero, 0, sizeof(zero));				// 메모리 0으로 64블록 사이즈 만큼 초기화.
         
         int in_image_fd = open(in_path, O_RDONLY);				//이미지 fd 생성
         if (in_image_fd < 0)		
             FATAL("[-] image %s compression failed.", in_path);
         
-        image_buffer_ = buffer;							//이미지 버퍼 생성
-        if (read(in_image_fd, image_buffer_, image_size_) != image_size_) {	//이미지를 읽어들임
+        image_buffer_ = buffer;							//이미지를 읽어들일 버퍼 생성
+        if (read(in_image_fd, image_buffer_, image_size_) != image_size_) {	//C언어 read 함수로 파일을 읽음. image_buffer_에 저장.
             perror("compress");
             FATAL("[-] image %s compression failed.", in_path);
         }
         
-        close(in_image_fd);
-        std::set<uint64_t> meta_blocks;
-        for (uint64_t i = 0; i < block_count_; i++) {
-            if (memcmp((char *)image_buffer_ + i * block_size_, zero, block_size_))
-                meta_blocks.insert(i);
+        close(in_image_fd);							
+        std::set<uint64_t> meta_blocks;							//메타데이터 블럭들 변수 선언.
+        for (uint64_t i = 0; i < block_count_; i++) {					
+            if (memcmp((char *)image_buffer_ + i * block_size_, zero, block_size_))	//현재 이미지 버퍼에 있는 블록의 값이 모두 0이 아닌 경우 
+                meta_blocks.insert(i);							//현재 인덱스 값을 meta_blocks에 저장.
         }
         int meta_image_fd = -1;
-        if (generate_meta_image) {
-            meta_image_fd = open(meta_path, O_CREAT | O_RDWR | O_TRUNC, 0666);
-            if (meta_image_fd < 0)
-                FATAL("[-] image %s compression failed.", in_path);
+        if (generate_meta_image) {							//meta_path 가 있는경우.
+            meta_image_fd = open(meta_path, O_CREAT | O_RDWR | O_TRUNC, 0666);		//메타데이터 이미지를 읽어들이기 위한 fd 생성.
+            if (meta_image_fd < 0)			
+                FATAL("[-] image %s compression failed.", in_path);	
         }
-        if (!release_metadata(meta_blocks, meta_image_fd, true))
+        if (!release_metadata(meta_blocks, meta_image_fd, true))			//
             FATAL("[-] image %s compression failed.", in_path);
         
         if (generate_meta_image)
@@ -102,6 +104,13 @@ class fsfuzzer {
     }
 
     
+
+	/* 함수명 : release_metadata
+	파라미터 :std::set<uint64_t> &meta_blocks (메타데이터 블럭들)
+		 int meta_image_fd		 (메타데이터를 읽어들이기 위한 fd)
+		 bool in_block			 (블럭)
+	
+	*/
     bool release_metadata(std::set<uint64_t> &meta_blocks, int meta_image_fd, bool in_block) {
       std::set<uint64_t>::iterator it = meta_blocks.begin();
 
