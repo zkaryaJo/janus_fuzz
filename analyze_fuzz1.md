@@ -30,12 +30,22 @@ class fsfuzzer {
       // if (image_buffer_)
       // munmap(image_buffer_, image_size_);
     }
-    virtual void fix_checksum() {}
-    virtual void fix_general_checksum() {}
-    virtual void compress(const char *in_path, void *buffer, const char *meta_path = NULL) {}
-    virtual void decompress(const void *meta_buffer, size_t meta_len, bool checksum = true) {}
-    virtual void general_decompress(const void *meta_buffer, size_t meta_len, bool checksum = true) {}
-    void general_compress(const char *in_path, void *buffer, const char *meta_path = NULL) {
+
+    virtual void fix_checksum() {}									//체크섬 게산 함수
+    virtual void fix_general_checksum() {}								//체크섬 게산 함수(general)
+    virtual void compress(const char *in_path, void *buffer, const char *meta_path = NULL) {}		//압축
+    virtual void decompress(const void *meta_buffer, size_t meta_len, bool checksum = true) {}		//압축해제
+    virtual void general_decompress(const void *meta_buffer, size_t meta_len, bool checksum = true) {}	//압축해제(general)
+
+
+	/*함수명 : general_compress
+	파라미터 : const char *in_path (압축할 이미지가 있는 경로)
+		  void *buffer	
+		  const char *meta_path = NULL
+	설명 : 
+
+	*/
+    void general_compress(const char *in_path, void *buffer, const char *meta_path = NULL) {		//압축(general)
         
         void *zero;
         struct stat st;
@@ -45,15 +55,15 @@ class fsfuzzer {
         block_size_ = 64;
         block_count_ = image_size_ / block_size_;
         
-        zero = malloc(block_size_);
-        vggmemset(zero, 0, sizeof(zero));
+        zero = malloc(block_size_);		//블록 사이즈 만큼 메모리 할당( malloc(64) )
+        vggmemset(zero, 0, sizeof(zero));	//
         
-        int in_image_fd = open(in_path, O_RDONLY);
-        if (in_image_fd < 0)
+        int in_image_fd = open(in_path, O_RDONLY);				//이미지 fd 생성
+        if (in_image_fd < 0)		
             FATAL("[-] image %s compression failed.", in_path);
         
-        image_buffer_ = buffer;
-        if (read(in_image_fd, image_buffer_, image_size_) != image_size_) {
+        image_buffer_ = buffer;							//이미지 버퍼 생성
+        if (read(in_image_fd, image_buffer_, image_size_) != image_size_) {	//이미지를 읽어들임
             perror("compress");
             FATAL("[-] image %s compression failed.", in_path);
         }
