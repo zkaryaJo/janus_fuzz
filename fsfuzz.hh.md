@@ -112,17 +112,17 @@ class fsfuzzer {
 	
 	*/
     bool release_metadata(std::set<uint64_t> &meta_blocks, int meta_image_fd, bool in_block) {
-      std::set<uint64_t>::iterator it = meta_blocks.begin();
+      std::set<uint64_t>::iterator it = meta_blocks.begin(); // meta_blocks 의 첫 원소
 
       do {
         extent_t extent;
-        extent.first = in_block ? (*it) * block_size_ : (*it);
-        extent.second = block_size_;
-        uint64_t cur_offset = extent.first;
+        extent.first = in_block ? (*it) * block_size_ : (*it);	//pair 의 첫 원소는 true인 경우 it*block_size_ / false인 경우 it의 포인터
+        extent.second = block_size_;				//pair 의 두번째 원소는 block_size_
+        uint64_t cur_offset = extent.first;			//cur_offset = pair의 첫 원소 ( true - it*block_size_ / false - it의 포잉ㄴ터)
 
-        for (it++; it != meta_blocks.end(); it++) {
+        for (it++; it != meta_blocks.end(); it++) {		//blocks의 끝까지 iterator을 증가시킨다.
 
-          if (cur_offset + block_size_ == (in_block ? (*it) * block_size_ : (*it))) {
+          if (cur_offset + block_size_ == (in_block ? (*it) * block_size_ : (*it))) {	//현재 offset + 블럭크기 =
             extent.second += block_size_;
             cur_offset += block_size_;
           } else {
