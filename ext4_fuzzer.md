@@ -112,6 +112,12 @@ static errcode_t find_metadata_blocks(ext2_filsys fs, struct find_block *fb)
     find_super_and_bgd(fs, i, fb);	// 슈퍼블록과 bgd 를 찾는다
 
     b = ext2fs_block_bitmap_loc(fs, i);	// 디스크에서 비트맵을 통해 block의 위치를 찾아 b에 저장.
+```
+비트맵 참조!
+![bitmap](./img/bitmap.png)
+
+
+```C
     fb->block_indexes.insert(b);
 
     b = ext2fs_inode_bitmap_loc(fs, i);
@@ -370,5 +376,5 @@ void ext4_fuzzer::general_decompress(
 
 }
 ```
-![bitmap](./img/bitmap.png)
+
 
