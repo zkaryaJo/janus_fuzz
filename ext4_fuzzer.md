@@ -109,22 +109,25 @@ static errcode_t find_metadata_blocks(ext2_filsys fs, struct find_block *fb)
 
   for (dgrp_t i = 0; i < fs->group_desc_count; i++) {
     
-    find_super_and_bgd(fs, i, fb);	// 슈퍼블록과 bgd 를 찾는다
+    find_super_and_bgd(fs, i, fb);	// 슈퍼블록과 bgd(block group descriptor)를 찾는다
 
-    b = ext2fs_block_bitmap_loc(fs, i);	// 디스크에서 비트맵을 통해 block의 위치를 찾아 b에 저장.
+    b = ext2fs_block_bitmap_loc(fs, i);	// 디스크에서 블록 비트맵의 위치를 찾아 해당 인덱스를 찾아 fb에 삽입.
+    fb->block_indexes.insert(b);
+
+    b = ext2fs_inode_bitmap_loc(fs, i);	// 디스크에서 비트맵을 통해 inode의 위치를 찾아 해당 인덱스를 찾아 fb에 삽입.
+    fb->block_indexes.insert(b);
+
 ```
-비트맵 참조!
+
+1) 블록 비트맵은 해당 블록이 사용중인지 아닌지 비트맵으로 표현한 것.
+2) 아이노드 비트맵은 해당 아이노드가 사용중인지 아닌지 비트맵으로 표현한 것.
 ![bitmap](./img/bitmap.png)
 
 
 ```C
-    fb->block_indexes.insert(b);
 
-    b = ext2fs_inode_bitmap_loc(fs, i);
-    fb->block_indexes.insert(b);
+    c = ext2fs_inode_table_loc(fs, i); // 그룹의 아이노드 테이블 블록의 위치를 찾아 c에 저장.
 
-    c = ext2fs_inode_table_loc(fs, i);
-    // for (blk64_t j = c; j < c + std::min(fs->inode_blocks_per_group, uint32_t(2)); j++) {
     for (blk64_t j = c; j < c + fs->inode_blocks_per_group; j++) {
         fb->block_indexes.insert(j);
     }
