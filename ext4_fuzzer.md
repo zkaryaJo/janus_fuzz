@@ -25,6 +25,11 @@ struct find_block {
   std::set<uint64_t> block_indexes;
 };
 
+/* 함수명 : find_metadata_blocks
+   파라미터 : fs
+	     struct find_block *fb
+   함수설명 : 
+*/
 static int find_block_helper(ext2_filsys fs EXT2FS_ATTR((unused)),
 			     blk64_t *blocknr, e2_blkcnt_t blockcnt,
 			     blk64_t ref_blk EXT2FS_ATTR((unused)),
@@ -40,6 +45,12 @@ static int find_block_helper(ext2_filsys fs EXT2FS_ATTR((unused)),
 	return 0;
 }
 
+/* 함수명 : find_super_and_bgd
+   파라미터 : fs
+	     group
+	     *fb
+   함수설명 : 
+*/
 static int find_super_and_bgd(ext2_filsys fs, dgrp_t group, struct find_block *fb)
 {
 	blk64_t	super_blk, old_desc_blk, new_desc_blk;
@@ -82,17 +93,18 @@ static int find_super_and_bgd(ext2_filsys fs, dgrp_t group, struct find_block *f
 	return num_blocks;
 }
 
-/* 함수명 : 
-   파라미터 : 
-   
+/* 함수명 : find_metadata_blocks
+   파라미터 : fs
+	     *fb
+   함수설명 : 
 */
 static errcode_t find_metadata_blocks(ext2_filsys fs, struct find_block *fb)
 {
-  blk64_t b, c;
-  ext2_inode_scan scan;
-  ext2_ino_t ino;
-  struct ext2_inode inode;
-  errcode_t retval;
+  blk64_t b, c;			//블록 b,c 선언
+  ext2_inode_scan scan;		//inode scanner
+  ext2_ino_t ino;		//
+  struct ext2_inode inode;	//ext2의 inode 구조체 선언
+  errcode_t retval;		//
 
   for (dgrp_t i = 0; i < fs->group_desc_count; i++) {
     
@@ -158,7 +170,10 @@ out:
 	return 0;
 }
 
-
+/* 함수명 : fix_checksum
+   파라미터 : -
+   함수설명 : 
+*/
 void ext4_fuzzer::fix_checksum() 
 {
   /* enable INCOMPAT_RECOVER */
@@ -188,6 +203,11 @@ void ext4_fuzzer::fix_checksum()
         sizeof(uint32_t));
 }
 
+
+/* 함수명 : fix_general_checksum
+   파라미터 : -
+   함수설명 : 
+*/
 void ext4_fuzzer::fix_general_checksum() 
 {
   /* disable RO_COMPAT_GDT_CSUM and RO_COMPAT_METADATA_CSUM */
@@ -203,6 +223,14 @@ void ext4_fuzzer::fix_general_checksum()
         sizeof(uint32_t));
 }
 
+
+
+/* 함수명 : compress
+   파라미터 : in_path
+	     buffer
+	     meta_path
+   함수설명 : 
+*/
 void ext4_fuzzer::compress(
     const char *in_path,
     void *buffer,
@@ -291,6 +319,14 @@ void ext4_fuzzer::compress(
 
 }
 
+
+
+/* 함수명 : decompress
+   파라미터 : meta_buffer
+	     meta_len
+	     checksum
+   함수설명 : 
+*/
 void ext4_fuzzer::decompress(
     const void *meta_buffer,
     size_t meta_len,
@@ -309,6 +345,13 @@ void ext4_fuzzer::decompress(
 
 }
 
+
+/* 함수명 : general_decompress
+   파라미터 : meta_buffer
+	     meta_len
+	     checksum
+   함수설명 : 
+*/
 void ext4_fuzzer::general_decompress(
     const void *meta_buffer,
     size_t meta_len,
