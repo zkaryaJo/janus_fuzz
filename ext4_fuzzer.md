@@ -25,9 +25,10 @@ struct find_block {
   std::set<uint64_t> block_indexes;
 };
 
-/* 함수명 : find_metadata_blocks
-   파라미터 : fs
-	     struct find_block *fb
+/* 함수명 : find_block_helper
+   파라미터 : blocknr 
+	     blockcnt
+	     priv_data
    함수설명 : 
 */
 static int find_block_helper(ext2_filsys fs EXT2FS_ATTR((unused)),
@@ -49,7 +50,7 @@ static int find_block_helper(ext2_filsys fs EXT2FS_ATTR((unused)),
    파라미터 : fs
 	     group
 	     *fb
-   함수설명 : 
+   함수설명 : super block, block group descriptors 를 찾아 
 */
 static int find_super_and_bgd(ext2_filsys fs, dgrp_t group, struct find_block *fb)
 {
@@ -108,9 +109,9 @@ static errcode_t find_metadata_blocks(ext2_filsys fs, struct find_block *fb)
 
   for (dgrp_t i = 0; i < fs->group_desc_count; i++) {
     
-    find_super_and_bgd(fs, i, fb);
+    find_super_and_bgd(fs, i, fb);	// 슈퍼블록과 bgd 를 찾는다
 
-    b = ext2fs_block_bitmap_loc(fs, i);
+    b = ext2fs_block_bitmap_loc(fs, i);	// 디스크에서 비트맵을 통해 block의 위치를 찾아 b에 저장.
     fb->block_indexes.insert(b);
 
     b = ext2fs_inode_bitmap_loc(fs, i);
@@ -231,10 +232,7 @@ void ext4_fuzzer::fix_general_checksum()
 	     meta_path
    함수설명 : 
 */
-void ext4_fuzzer::compress(
-    const char *in_path,
-    void *buffer,
-    const char *meta_path) 
+void ext4_fuzzer::compress( const char *in_path, void *buffer, const char *meta_path) 
 {
   bool generate_meta_image = meta_path != NULL;
   
@@ -243,12 +241,12 @@ void ext4_fuzzer::compress(
   ext2fs_block_bitmap bitmap;
   struct find_block fb;
 
-  ret = ext2fs_open(in_path, EXT2_FLAG_64BITS, 0, 0, unix_io_manager, &fs);
+  ret = ext2fs_open(in_path, EXT2_FLAG_64BITS, 0, 0, unix_io_manager, &fs); //in_path에 있는 파일시스템을 fs(ext2fs)로 받아온다.
 
   if (ret)
     FATAL("[-] image %s compression failed.", in_path);
 
-  find_metadata_blocks(fs, &fb);
+  find_metadata_blocks(fs, &fb);			//메타데이터 블록을 찾는다.
 
   block_size_ = 1 << (10 + fs->super->s_log_block_size);
   block_count_ = fs->super->s_blocks_count;
@@ -372,3 +370,5 @@ void ext4_fuzzer::general_decompress(
 
 }
 ```
+
+dd
