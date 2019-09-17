@@ -370,5 +370,5 @@ void ext4_fuzzer::general_decompress(
 
 }
 ```
+![bitmap](./img/bitmap.png)
 
-dd
