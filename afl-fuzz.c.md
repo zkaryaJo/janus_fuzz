@@ -91,7 +91,7 @@ u32 orig_queued_with_cov; //
 
 ```
 
-fuzz_one 스케쥴링 확
+fuzz_one 스케쥴링 확인!!
 
 ```C
 static u8 fuzz_one(char** argv) {
@@ -172,7 +172,7 @@ havoc_stage:
 
   stage_cur_byte = -1;
 
-  if (!splice_cycle) {
+  if (!splice_cycle) {	//splice 
 
     stage_name  = "havoc";
     stage_short = "havoc";
@@ -189,6 +189,95 @@ havoc_stage:
     stage_max   = SPLICE_HAVOC * perf_score / havoc_div / 100;
 
   }
+
+  if (stage_max < HAVOC_MIN) stage_max = HAVOC_MIN; //stage_max = 16
+
+  temp_len = fsfuzz_mode ? meta_size : len;
+
+  orig_hit_cnt = queued_paths + unique_crashes;
+
+  orig_queued_with_cov = queued_with_cov;
+
+  havoc_queued = queued_paths;
+
+```
+
+cov
+```C
+
+  //랜덤으로 수천개를 꼬아보고 비틀어 본다.
+  for (stage_cur = 0; stage_cur < stage_max; stage_cur++) {
+
+    u32 use_stacking = 1 << (1 + UR(HAVOC_STACK_POW2)); // UR() - 1 을 난수만큼 왼쪽으로 shift 연산
+    stage_cur_val = use_stacking;
+
+    for (i = 0; i < use_stacking; i++) { // 1-128 번 비트를 꼬거나 바꾼다.
+
+      // switch (UR(15 + ((extras_cnt + a_extras_cnt) ? 2 : 0))) { // AFL은 16개의 case 활용
+      switch (UR(12 + ((extras_cnt + a_extras_cnt) ? 1 : 0))) {    // JANUS는 12개의 case 활용
+
+        case 0: /* Flip a single bit somewhere. Spooky! */ FLIP_BIT(out_buf, UR(temp_len << 3)); 
+        case 1: /* Set byte to interesting value. */ out_buf[UR(temp_len)] = interesting_8[UR(sizeof(interesting_8))]; 
+        case 2: /* Set word to interesting value, randomly choosing endian. */
+        case 3: /* Set dword to interesting value, randomly choosing endian. */
+        case 4: /* Randomly subtract from byte. */ out_buf[UR(temp_len)] -= 1 + UR(ARITH_MAX);
+        case 5: /* Randomly add to byte. */ out_buf[UR(temp_len)] += 1 + UR(ARITH_MAX); 
+        case 6: /* Randomly subtract from word(16비트), random endian. */ 
+        case 7: /* Randomly add to word, random endian. */
+        case 8: /* Randomly subtract from dword, random endian. */
+        case 9: /* Randomly add to dword, random endian. */
+        case 10:/* Just set a random byte to a random value. Because,
+		     why not. We use XOR with 1-255 to eliminate the
+		     possibility of a no-op. */
+        case 11:/* Overwrite bytes with a randomly selected chunk (75%) or fixed bytes (25%). */
+        case 12:/* Overwrite bytes with an extra. */
+    }
+
+```
+
+for문을 돌고 난 후 common_fuzz_stuff 함수에 비틀어 놓은 인자(out_buf) 를 집어 넣어서 버릴 지 말지 확인.
+
+```C
+
+    if (common_fuzz_stuff(argv, out_buf, len))		// 중요한 단계  
+      goto abandon_entry;
+
+    memcpy(out_buf, in_buf, temp_len); 			// 버리지 않는다면 out_buf 를 in_buf에 복사.(feed-back)
+
+    if (queued_paths != havoc_queued) {			
+
+      if (perf_score <= HAVOC_MAX_MULT * 100) {
+        stage_max  *= 2;
+        perf_score *= 2;
+      }
+
+      havoc_queued = queued_paths;
+
+    }
+  }
+
+  new_hit_cnt = queued_paths + unique_crashes;
+
+  if (!splice_cycle) {
+    stage_finds[STAGE_HAVOC]  += new_hit_cnt - orig_hit_cnt;
+    stage_cycles[STAGE_HAVOC] += stage_max;
+  } else {
+    stage_finds[STAGE_SPLICE]  += new_hit_cnt - orig_hit_cnt;
+    stage_cycles[STAGE_SPLICE] += stage_max;
+  }
+
+  if (queued_with_cov > orig_queued_with_cov)
+    goto ret;
+  else
+    goto fsfuzz_stage;
+
+```
+
+JANUS는 splicing stage는 안함.
+
+```C
+
+fsfuzz_stage:
 
 ```
 
