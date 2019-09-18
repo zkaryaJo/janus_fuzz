@@ -1,6 +1,6 @@
-JANUS 는 forkserver, coverage bitmap, test-case scheduling algorithm 을 포함한 기본 구조가 AFL과 동일하다고 한다.!!!
+JANUS 는 forkserver, coverage bitmap, test-case scheduling algorithm 을 포함한 기본 구조가 AFL과 동일하다고 한다.
 
-![bitmap](./img/scheduling algorithm.png)
+![bitmap](./img/scheduling_algorithm.png)
 
 
 그렇다면 AFL을 확인하고 AFL과 바뀐 부분을 중점적으로 살펴보자.
