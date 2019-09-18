@@ -111,11 +111,11 @@ static errcode_t find_metadata_blocks(ext2_filsys fs, struct find_block *fb)
     
     find_super_and_bgd(fs, i, fb);	// 슈퍼블록과 bgd(block group descriptor)를 찾는다
 
-    b = ext2fs_block_bitmap_loc(fs, i);	// 디스크에서 블록 비트맵의 위치를 찾아 해당 인덱스를 찾아 fb에 삽입.
-    fb->block_indexes.insert(b);
+    b = ext2fs_block_bitmap_loc(fs, i);	// 디스크에서 블록 비트맵의 위치를 찾아 해당 인덱스를 찾아 
+    fb->block_indexes.insert(b);	// fb에 인덱스 삽입.
 
-    b = ext2fs_inode_bitmap_loc(fs, i);	// 디스크에서 비트맵을 통해 inode의 위치를 찾아 해당 인덱스를 찾아 fb에 삽입.
-    fb->block_indexes.insert(b);
+    b = ext2fs_inode_bitmap_loc(fs, i);	// 디스크에서 비트맵을 통해 inode의 위치를 찾아 해당 인덱스를 찾아
+    fb->block_indexes.insert(b);	// fb에 인덱스 삽입.
 
 ```
 
@@ -128,7 +128,7 @@ static errcode_t find_metadata_blocks(ext2_filsys fs, struct find_block *fb)
 
     c = ext2fs_inode_table_loc(fs, i); // 그룹의 아이노드 테이블 블록의 위치를 찾는다.
 
-    //inode 테이블에 있는 inode 블록들의 인덱스를 모두 fb에 insert
+    //inode 테이블에 있는 inode 블록들의 인덱스를 모두 fb에 삽입
     for (blk64_t j = c; j < c + fs->inode_blocks_per_group; j++) {	
         fb->block_indexes.insert(j);					
     }
@@ -256,19 +256,19 @@ void ext4_fuzzer::compress( const char *in_path, void *buffer, const char *meta_
   if (ret)
     FATAL("[-] image %s compression failed.", in_path);
 
-  find_metadata_blocks(fs, &fb);			//메타데이터 블록을 찾는다.
+  find_metadata_blocks(fs, &fb);			//메타데이터 블록을 찾아 fb에 저장.
 
   block_size_ = 1 << (10 + fs->super->s_log_block_size);
   block_count_ = fs->super->s_blocks_count;
 
-  image_size_ = block_size_ * block_count_;
+  image_size_ = block_size_ * block_count_;		//이미지 크기 계산
 
-  int in_image_fd = open(in_path, O_RDONLY);
+  int in_image_fd = open(in_path, O_RDONLY);		//이미지 in_path에 있는 이미지를 fd로 받아온다.
   if (in_image_fd < 0)
     FATAL("[-] image %s compression failed.", in_path);
 
   image_buffer_ = buffer;
-  if (read(in_image_fd, image_buffer_, image_size_) != image_size_) {
+  if (read(in_image_fd, image_buffer_, image_size_) != image_size_) {	//fd에 있는 이미지를 image_buffer_에 읽어온다.
     perror("compress");
     FATAL("[-] image %s compression failed.", in_path);
   }
@@ -299,9 +299,9 @@ void ext4_fuzzer::compress( const char *in_path, void *buffer, const char *meta_
 
   char zeros[64];
   memset(zeros, 0, sizeof(zeros));
-  for (auto it = fb.block_indexes.begin(); it != fb.block_indexes.end(); ) {
+  for (auto it = fb.block_indexes.begin(); it != fb.block_indexes.end(); ) {	//찾아온 메타데이터 블록들(fb)
     char buf[64];
-    memcpy(buf, ((char *)image_buffer_ + (*it) * block_size_), 64);
+    memcpy(buf, ((char *)image_buffer_ + (*it) * block_size_), 64);		//?
     if (!memcmp(zeros, buf, 64))
         fb.block_indexes.erase(it++);
     else
@@ -310,7 +310,7 @@ void ext4_fuzzer::compress( const char *in_path, void *buffer, const char *meta_
 
   int meta_image_fd = -1;
   if (generate_meta_image) {
-    meta_image_fd = open(meta_path, O_CREAT | O_RDWR | O_TRUNC, 0666);
+    meta_image_fd = open(meta_path, O_CREAT | O_RDWR | O_TRUNC, 0666);		// meta 이미지 fd
     if (meta_image_fd < 0)
       FATAL("[-] image %s compression failed.", in_path);
   }
