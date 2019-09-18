@@ -1,4 +1,25 @@
-JANUS에서 추가한 헤더파일
+JANUS 는 forkserver, coverage bitmap, test-case scheduling algorithm 을 포함한 기본 구조가 AFL과 동일하다고 한다.!!!
+
+![bitmap](./img/scheduling algorithm.png)
+
+
+그렇다면 AFL을 확인하고 AFL과 바뀐 부분을 중점적으로 살펴보자.
+다음은 AFL의 mutation 연산자들이다.
+![bitmap](./img/AFL_mutation_operator.png)
+
+
+다음은 AFL의 mutation 스케쥴링 구조이다.
+![bitmap](./img/AFL_mutation_scheduling.png)
+
+상단의 그림을 보면 
+
+1. deterministic stage, Havoc stage, Splicing stage 3개의 stage가 있다. 
+JANUS는 deterministic stage, Splicing stage를 모두 생략하고 바로 Havoc stage를 사용한다.
+
+
+
+이제 변경된 부분을 보자.
+다음은 JANUS에서 추가한 헤더파일이다.
 ```C
 #include <sys/sendfile.h>
 #include <mutator_wrapper.hpp>
@@ -13,43 +34,36 @@ JANUS에서 추가된 옵션
       case 'u': /* CPU# */
 	        if (sscanf(optarg, "%u", &cpu_id) != 1)
 	          PFATAL("Invalid CPU#");
-	        break;
 
 	  case 'g': /* image path */
 		image_file = optarg;
-		fsfuzz_mode = 1;
-        OKF("[fs-fuzz] target image path: %s", image_file);
-		break;
+	        OKF("[fs-fuzz] target image path: %s", image_file);
+
 	
       case 'k': /* kernel fuzz mode */
 		OKF("We are now fuzzing kernel");
-		fsfuzz_mode = 1;
-		break;
 	 
 	  case 'b': /* shm name */
 		shm_name = optarg;
 		fsfuzz_mode = 1;
-        OKF("[fs-fuzz] shm name to store image buffer: %s", shm_name);
-		break;
+	        OKF("[fs-fuzz] shm name to store image buffer: %s", shm_name);
+
 	  
 	  case 's': /* wrapper.so path */
 		wrapper_file = optarg;
 		fsfuzz_mode = 1;
-        OKF("[fs-fuzz] target wrapper (.so) path: %s", wrapper_file);
-		break;
+	        OKF("[fs-fuzz] target wrapper (.so) path: %s", wrapper_file);
 	  
 	  case 'e': /* seed */
 		seed_file = optarg;
 		fsfuzz_mode = 1;
-        OKF("[fs-fuzz] seed image path: %s", seed_file);
-		break;
+	        OKF("[fs-fuzz] seed image path: %s", seed_file);
 
 	  case 'y' : /* syscall input dir */
-
 		syscall_in_dir = optarg;
 		fsfuzz_mode = 1;
-        OKF("[fs-fuzz] syscall input directory: %s", syscall_in_dir);
-		break;
+	        OKF("[fs-fuzz] syscall input directory: %s", syscall_in_dir);
+
 
 
 ```
