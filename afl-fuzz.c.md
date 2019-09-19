@@ -176,8 +176,19 @@ static u8 fuzz_one(char** argv) {
 
   /* 스코어 계산. */
   orig_perf = perf_score = calculate_score(queue_cur);
-  goto havoc_stage;
+
 ```
+스코어 계산 이후 deterministic stage 가 있다.
+
+하지만 JANUS는 바로! havoc_stage로 가라고 한다!
+
+```C
+  if (fsfuzz_mode || skip_deterministic || queue_cur->was_fuzzed || queue_cur->passed_det)
+    goto havoc_stage;
+
+```
+
+스코어 계산이 끝나고 
 
 havoc 스테이지 !!
 ```C
@@ -191,7 +202,7 @@ havoc_stage:
     stage_name  = "havoc";
     stage_short = "havoc";
     stage_max   = (doing_det ? HAVOC_CYCLES_INIT : HAVOC_CYCLES) *
-                  perf_score / havoc_div / 100;
+		 perf_score / havoc_div / 100;
 
   } else {
 
@@ -280,7 +291,7 @@ for문을 돌고 난 후 common_fuzz_stuff 함수에 비틀어 놓은 인자(out
     stage_cycles[STAGE_SPLICE] += stage_max;
   }
 
-  if (queued_with_cov > orig_queued_with_cov)
+  if (queued_with_cov > orig_queued_with_cov)  // bit 커버리지가 늘었으면 
     goto ret;
   else
     goto fsfuzz_stage;
@@ -292,6 +303,35 @@ JANUS는 splicing stage는 안함.
 ```C
 
 fsfuzz_stage:
+
+  mutate_havoc_init(out_buf + meta_size, len - meta_size, stage_max); // havoc 초기화.
+
+  u8* new_buf = (u8*)ck_alloc(meta_size + MAX_FILE);
+
+  memcpy(new_buf, out_buf, len); // new_buf
+
+  for(stage_cur = 0; stage_cur < stage_max; stage_cur++) {
+
+      fs_buf_len = mutate_havoc(new_buf + meta_size, MAX_FILE, MUTATE);
+
+      if (common_fuzz_stuff(argv, new_buf, meta_size + fs_buf_len)) goto abandon_entry;
+
+      if (queued_paths != fsfuzz_queued) {
+
+        if (perf_score <= HAVOC_MAX_MULT * 100) {
+            stage_max  *= 2;
+            perf_score *= 2;
+        }
+
+        fsfuzz_queued = queued_paths;
+
+     }
+
+  }
+
+  if (queued_paths > init_queued)
+      goto fsfuzz_fini;
+
 
 ```
 
